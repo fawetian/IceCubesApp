@@ -1,5 +1,27 @@
+// 文件功能：Mastodon 用户账户数据模型，包含用户信息、统计数据、字段验证等完整用户资料。
+// 相关技术点：
+// - Codable：JSON 序列化/反序列化协议。
+// - Equatable & Hashable：对象比较和哈希支持。
+// - Sendable：并发安全协议，支持跨线程传递。
+// - 嵌套类型：Field 和 Source 嵌套结构体。
+// - 计算属性：头像、标题、全名等衍生属性。
+// - 自定义初始化器：支持多种初始化方式。
+// - 枚举 CodingKeys：自定义编码键映射。
+// - 占位符模式：测试和预览用的静态数据。
+//
+// 技术点详解：
+// 1. HTMLString：富文本字符串类型，支持 HTML 渲染。
+// 2. ServerDate：服务器时间戳类型。
+// 3. Visibility：隐私级别枚举（公开、仅关注者等）。
+// 4. cachedDisplayName：缓存的显示名称，性能优化。
+// 5. Field：用户自定义字段，支持验证状态。
+// 6. Source：账户设置源数据。
+// 7. moved：账户迁移指向的新账户。
+// 8. FamiliarAccounts：相关账户推荐结构。
+// 导入基础库，用于基本数据类型和编码
 import Foundation
 
+// 公共最终类，表示 Mastodon 用户账户，实现多个协议
 public final class Account: Codable, Identifiable, Hashable, Sendable, Equatable {
   public static func == (lhs: Account, rhs: Account) -> Bool {
     lhs.id == rhs.id && lhs.username == rhs.username && lhs.note.asRawText == rhs.note.asRawText

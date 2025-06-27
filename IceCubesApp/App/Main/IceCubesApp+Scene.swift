@@ -1,19 +1,41 @@
+// 文件功能说明：
+// 该文件为 IceCubesApp 的场景扩展，定义了主窗口、编辑器窗口、媒体窗口等多场景支持，并处理推送、意图、主题、环境注入等。
+// 技术点：
+// 1. SwiftUI 多场景（Scene/WindowGroup/SceneBuilder）—— 支持多窗口和多类型场景。
+// 2. 环境注入（.environment）—— 依赖注入各类单例和服务。
+// 3. 主题应用（.applyTheme）—— 动态切换主题。
+// 4. 路由弹窗、媒体预览、通知处理、意图处理。
+// 5. 兼容 macCatalyst/visionOS 多平台适配。
+// 6. SwiftUI 的 .onAppear/.onChange/.sheet 等生命周期和交互修饰符。
+// 7. AppIntents 深度集成。
+//
+// 下面为每行代码详细注释：
+// 引入 AppIntents 框架
 import AppIntents
+// 引入环境配置模块
 import Env
+// 引入媒体 UI 相关模块
 import MediaUI
+// 引入状态管理相关模块
 import StatusKit
+// 引入 SwiftUI 框架
 import SwiftUI
 
+// 扩展 IceCubesApp，添加多场景支持
 extension IceCubesApp {
+  // 主窗口场景
   var appScene: some Scene {
     WindowGroup(id: "MainWindow") {
+      // 主界面视图
       AppView(selectedTab: $selectedTab, appRouterPath: $appRouterPath)
         .applyTheme(theme)
         .onAppear {
+          // 初始化环境与服务
           setNewClientsInEnv(client: appAccountsManager.currentClient)
           setupRevenueCat()
           refreshPushSubs()
         }
+        // 注入各种环境对象
         .environment(appAccountsManager)
         .environment(appAccountsManager.currentClient)
         .environment(quickLook)
@@ -25,6 +47,7 @@ extension IceCubesApp {
         .environment(pushNotificationsService)
         .environment(appIntentService)
         .environment(\.isSupporter, isSupporter)
+        // 媒体预览弹窗
         .sheet(item: $quickLook.selectedMediaAttachment) { selectedMediaAttachment in
           if let namespace = quickLook.namespace {
             MediaUIView(
@@ -40,6 +63,7 @@ extension IceCubesApp {
             EmptyView()
           }
         }
+        // 处理推送通知
         .onChange(of: pushNotificationsService.handledNotification) { _, newValue in
           if newValue != nil {
             pushNotificationsService.handledNotification = nil
@@ -59,20 +83,25 @@ extension IceCubesApp {
             }
           }
         }
+        // 处理 AppIntent
         .onChange(of: appIntentService.handledIntent) { _, _ in
           if let intent = appIntentService.handledIntent?.intent {
             handleIntent(intent)
             appIntentService.handledIntent = nil
           }
         }
+        // 注入模型容器
         .withModelContainer()
     }
+    // 注入菜单命令
     .commands {
       appMenu
     }
+    // 监听场景生命周期变化
     .onChange(of: scenePhase) { _, newValue in
       handleScenePhase(scenePhase: newValue)
     }
+    // 监听账号切换
     .onChange(of: appAccountsManager.currentClient) { _, newValue in
       setNewClientsInEnv(client: newValue)
       if newValue.isAuth {
@@ -86,8 +115,10 @@ extension IceCubesApp {
     #endif
   }
 
+  // 其他窗口场景（如编辑器、媒体预览）
   @SceneBuilder
   var otherScenes: some Scene {
+    // 编辑器窗口
     WindowGroup(for: WindowDestinationEditor.self) { destination in
       Group {
         switch destination.wrappedValue {
@@ -119,6 +150,7 @@ extension IceCubesApp {
     .defaultSize(width: 600, height: 800)
     .windowResizability(.contentMinSize)
 
+    // 媒体窗口
     WindowGroup(for: WindowDestinationMedia.self) { destination in
       Group {
         switch destination.wrappedValue {
@@ -140,6 +172,7 @@ extension IceCubesApp {
     .windowResizability(.contentMinSize)
   }
 
+  // 处理 AppIntent 的私有方法
   private func handleIntent(_: any AppIntent) {
     if let postIntent = appIntentService.handledIntent?.intent as? PostIntent {
       #if os(visionOS) || os(macOS)
@@ -166,6 +199,7 @@ extension IceCubesApp {
   }
 }
 
+// 扩展 Scene，支持窗口大小调整
 extension Scene {
   func windowResize() -> some Scene {
     return self.windowResizability(.contentSize)

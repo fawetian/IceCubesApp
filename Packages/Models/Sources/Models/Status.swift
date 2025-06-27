@@ -1,5 +1,27 @@
+// 文件功能：Mastodon 状态（帖子）数据模型，包含帖子内容、交互数据、媒体附件等完整信息。
+// 相关技术点：
+// - AnyStatus 协议：抽象状态接口，支持多态。
+// - Visibility 枚举：帖子可见性级别。
+// - Status 类：完整的帖子数据模型。
+// - ReblogStatus：转发帖子的嵌套结构。
+// - 计算属性：媒体状态转换、隐藏状态判断。
+// - 占位符模式：测试和预览数据。
+// - Equatable & Hashable：对象比较支持。
+// - Codable：JSON 序列化支持。
+//
+// 技术点详解：
+// 1. HTMLString：支持 HTML 格式的字符串类型。
+// 2. ServerDate：服务器时间戳类型。
+// 3. MediaAttachment：媒体附件数组。
+// 4. filtered：内容过滤器，支持隐藏/警告。
+// 5. spoilerText：敏感内容警告文本。
+// 6. reblog：转发原帖的嵌套结构。
+// 7. AnyStatus：协议抽象，支持不同状态类型。
+// 8. asMediaStatus：转换为媒体状态数组。
+// 导入基础库，用于基本数据类型
 import Foundation
 
+// 帖子可见性枚举，定义不同的隐私级别
 public enum Visibility: String, Codable, CaseIterable, Hashable, Equatable, Sendable {
   case pub = "public"
   case unlisted

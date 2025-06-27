@@ -1,5 +1,34 @@
+// 文件功能说明：
+// 该文件定义了应用的颜色主题系统，包含多套预定义的颜色方案（明亮/深色模式），每套主题都有完整的色调、背景色和标签色配置。
+
+// 技术点：
+// 1. 协议定义 —— ColorSet协议统一颜色方案接口
+// 2. Sendable协议 —— 并发安全的数据传递
+// 3. 枚举类型 —— ColorScheme和ColorSetName枚举
+// 4. 结构体实现 —— 各种颜色主题的具体实现
+// 5. 十六进制颜色 —— Color.init(hex:)构造器
+// 6. RGB颜色值 —— Color.init(red:green:blue:)构造器
+// 7. Identifiable协议 —— ColorSetCouple的唯一标识
+// 8. 计算属性 —— 动态生成ID的计算属性
+// 9. 数组集合 —— availableColorsSets全局可用主题列表
+// 10. 公共API —— 所有类型和属性的public访问级别
+
+// 技术点详解：
+// 1. 协议定义：ColorSet协议定义了所有颜色主题必须实现的属性和方法
+// 2. Sendable：Swift并发协议，确保类型可以安全地在不同线程间传递
+// 3. 枚举类型：使用枚举定义有限的选项集，提供类型安全和可预测性
+// 4. 结构体实现：使用轻量级结构体实现具体的颜色主题，性能优越
+// 5. 十六进制颜色：支持Web标准的十六进制颜色码，便于设计师协作
+// 6. RGB颜色值：使用0-1范围的RGB值创建精确的颜色定义
+// 7. Identifiable：为颜色主题对提供唯一标识符，用于SwiftUI列表渲染
+// 8. 计算属性：动态生成基于明暗主题名称组合的唯一ID
+// 9. 数组集合：全局定义所有可用的颜色主题对，便于主题选择
+// 10. 公共API：所有定义都是公共的，可以被其他模块访问和使用
+
+// 导入SwiftUI框架，提供Color颜色类型
 import SwiftUI
 
+// 全局可用的颜色主题对数组，包含所有预定义的明暗主题配对
 public let availableColorsSets: [ColorSetCouple] =
   [
     .init(light: IceCubeLight(), dark: IceCubeDark()),
