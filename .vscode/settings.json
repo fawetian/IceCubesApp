@@ -4,5 +4,10 @@
     "editor.formatOnSave": true,
     "editor.tabSize": 2
   },
-  "editor.quickSuggestions": false,
+  "editor.quickSuggestions": {
+    "comments": "off",
+    "strings": "off",
+    "other": "off"
+  },
+  "kiroAgent.configureMCP": "Disabled",
 }
