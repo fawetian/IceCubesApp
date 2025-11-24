@@ -77,7 +77,7 @@ PackageName/
 │       ├── Services/      # 业务服务
 │       └── Extensions/    # 扩展
 └── Tests/
-    └── PackageNameTests/
+    └── PackageNameTests
 ```
 
 ### 2.4 依赖原则

@@ -1,11 +1,63 @@
+// 文件功能：用户偏好设置管理
+//
+// 核心职责：
+// - 管理所有用户可配置的应用设置
+// - 持久化设置到 UserDefaults 和 App Group
+// - 同步服务器端偏好设置（如默认可见性、敏感内容设置）
+// - 提供设置的读写接口和计算属性
+//
+// 技术要点：
+// - @Observable：使用 Swift Observation 框架实现响应式更新
+// - @MainActor：确保所有 UI 相关操作在主线程执行
+// - @AppStorage：自动持久化设置到 UserDefaults
+// - 单例模式：全局唯一的设置管理器
+// - App Group：通过 shared UserDefaults 在主应用和扩展间共享数据
+//
+// 架构设计：
+// - Storage 内部类：使用 @AppStorage 包装所有持久化属性
+// - UserPreferences 公开属性：提供 Observable 的接口，didSet 时同步到 Storage
+// - 这种双层设计确保了 @Observable 和 @AppStorage 的兼容性
+//
+// 依赖关系：
+// - 依赖：Models（Visibility 等类型）、NetworkClient（获取服务器偏好）
+// - 被依赖：所有需要访问用户设置的视图和服务
+
 import Combine
 import Foundation
 import Models
 import NetworkClient
 import SwiftUI
 
+/// 用户偏好设置管理器
+///
+/// 管理应用的所有用户可配置设置，包括：
+/// - UI 偏好（浏览器、主题、字体等）
+/// - 内容偏好（自动展开、媒体播放等）
+/// - 交互偏好（触觉反馈、滑动手势等）
+/// - 发帖默认设置（可见性、敏感内容等）
+///
+/// 使用示例：
+/// ```swift
+/// @Environment(UserPreferences.self) private var preferences
+///
+/// var body: some View {
+///     Toggle("自动播放视频", isOn: $preferences.autoPlayVideo)
+/// }
+/// ```
+///
+/// - Note: 使用单例模式，通过 `UserPreferences.shared` 访问
+/// - Warning: 所有属性访问必须在主线程（@MainActor）
 @MainActor
 @Observable public class UserPreferences {
+  /// 内部存储类
+  ///
+  /// 使用 @AppStorage 包装所有需要持久化的设置。
+  /// 这种设计模式解决了 @Observable 和 @AppStorage 的兼容性问题。
+  ///
+  /// 工作原理：
+  /// 1. Storage 使用 @AppStorage 自动持久化到 UserDefaults
+  /// 2. UserPreferences 的公开属性在 didSet 时同步到 Storage
+  /// 3. @Observable 监听公开属性的变化，触发 UI 更新
   class Storage {
     @AppStorage("preferred_browser") public var preferredBrowser: PreferredBrowser = .inAppSafari
     @AppStorage("show_translate_button_inline") public var showTranslateButton: Bool = true
