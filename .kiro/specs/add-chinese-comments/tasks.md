@@ -4,7 +4,7 @@
 
 ### 1. Models 包核心模型注释
 
-- [ ] 1.1 为 Status.swift 添加完整注释
+- [x] 1.1 为 Status.swift 添加完整注释
   - 添加文件顶部功能说明（文件功能、核心职责、技术要点、依赖关系）
   - 为 Status 结构体添加详细文档注释，包括使用示例
   - 为所有 public 属性添加注释（id, content, account, createdAt 等 30+ 属性）
@@ -17,7 +17,7 @@
   - **属性 2：类型注释完整性**
   - **验证需求：1.4**
 
-- [ ] 1.3 为 Account.swift 添加完整注释
+- [x] 1.3 为 Account.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 Account 结构体添加详细文档注释
   - 为所有 public 属性添加注释（20+ 属性）
@@ -30,7 +30,7 @@
   - **属性 2：类型注释完整性**
   - **验证需求：1.4**
 
-- [ ] 1.5 为 Notification.swift 添加完整注释
+- [x] 1.5 为 Notification.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 Notification 结构体添加详细文档注释
   - 为 NotificationType 枚举的 10 种类型添加详细说明
@@ -38,7 +38,7 @@
   - 说明不同通知类型的触发条件和显示方式
   - _需求：1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.6 为 MediaAttachment.swift 添加完整注释
+- [x] 1.6 为 MediaAttachment.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 MediaAttachment 结构体添加详细文档注释
   - 为 MediaType 枚举的 4 种类型添加说明
@@ -46,7 +46,7 @@
   - 说明图片、视频、音频的处理差异
   - _需求：1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.7 为其他核心 Models 添加注释
+- [x] 1.7 为其他核心 Models 添加注释
   - Poll.swift（投票功能）
   - Card.swift（链接卡片）
   - Tag.swift（标签）
@@ -56,6 +56,10 @@
   - Relationship.swift（用户关系）
   - Mention.swift（提及）
   - Instance.swift（实例信息）
+  - Filter.swift（内容过滤）
+  - Application.swift（应用信息）
+  - History.swift（历史数据）
+  - Translation.swift（翻译）
   - _需求：1.1, 1.2, 1.3, 1.4_
 
 - [ ]* 1.8 为 Models 包编写格式一致性测试
@@ -64,7 +68,7 @@
 
 ### 2. NetworkClient 包核心注释
 
-- [ ] 2.1 为 MastodonClient.swift 添加完整注释
+- [x] 2.1 为 MastodonClient.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 Client 类添加详细文档注释，包括使用示例
   - 为 get/post/put/delete 方法添加详细注释
@@ -77,7 +81,7 @@
   - **属性 3：方法注释参数匹配**
   - **验证需求：2.3**
 
-- [ ] 2.3 为 Endpoint.swift 添加完整注释
+- [x] 2.3 为 Endpoint.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 Endpoint 协议添加详细文档注释
   - 说明如何定义新的 API 端点
@@ -85,19 +89,19 @@
   - 提供自定义端点的示例
   - _需求：2.2, 2.3_
 
-- [ ] 2.4 为 Timelines.swift 端点添加注释
+- [x] 2.4 为 Timelines.swift 端点添加注释
   - 为所有时间线端点添加注释（home, public, hashtag 等）
   - 说明分页参数的使用
   - 说明过滤参数的作用
   - _需求：2.2_
 
-- [ ] 2.5 为 Statuses.swift 端点添加注释
+- [x] 2.5 为 Statuses.swift 端点添加注释
   - 为所有状态相关端点添加注释（post, delete, favourite, reblog 等）
   - 说明媒体上传流程
   - 说明投票创建和投票流程
   - _需求：2.2_
 
-- [ ] 2.6 为 Accounts.swift 端点添加注释
+- [x] 2.6 为 Accounts.swift 端点添加注释
   - 为所有账户相关端点添加注释（lookup, follow, block, mute 等）
   - 说明关系管理的 API 使用
   - _需求：2.2_
@@ -113,7 +117,7 @@
 
 ### 3. Env 包核心注释
 
-- [ ] 3.1 为 CurrentAccount.swift 添加完整注释
+- [x] 3.1 为 CurrentAccount.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 CurrentAccount 类添加详细文档注释
   - 说明账户管理的生命周期
@@ -126,7 +130,7 @@
   - **属性 4：注释内容准确性**
   - **验证需求：3.1**
 
-- [ ] 3.3 为 Router.swift 添加完整注释
+- [x] 3.3 为 Router.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 Router 类添加详细文档注释
   - 说明路由系统的工作原理
@@ -135,7 +139,7 @@
   - 提供导航示例
   - _需求：3.3_
 
-- [ ] 3.4 为 UserPreferences.swift 添加完整注释
+- [x] 3.4 为 UserPreferences.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 UserPreferences 类添加详细文档注释
   - 说明偏好设置的存储机制（UserDefaults）
@@ -143,7 +147,7 @@
   - 说明如何添加新的偏好设置
   - _需求：3.2_
 
-- [ ] 3.5 为 StreamWatcher.swift 添加完整注释
+- [x] 3.5 为 StreamWatcher.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 StreamWatcher 类添加详细文档注释
   - 说明实时流的工作原理（WebSocket）
@@ -157,7 +161,7 @@
 
 ### 4. StatusKit 包核心注释
 
-- [ ] 4.1 为 StatusRowView.swift 添加完整注释
+- [x] 4.1 为 StatusRowView.swift 添加完整注释
   - 添加文件顶部功能说明
   - 为 StatusRowView 结构体添加详细文档注释
   - 说明视图层次结构
@@ -170,8 +174,8 @@
   - **属性 5：示例代码可编译性**
   - **验证需求：5.1**
 
-- [ ] 4.3 为 StatusEditor.swift 添加完整注释
-  - 添加文件顶部功能说明
+- [x] 4.3 为 StatusEditor.swift 添加完整注释
+  - 添加文件顶部功能说明（MainView.swift 和 ViewModel.swift）
   - 为 StatusEditor 结构体添加详细文档注释
   - 说明编辑器的状态管理
   - 说明媒体上传流程

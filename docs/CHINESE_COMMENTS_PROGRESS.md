@@ -2,9 +2,10 @@
 
 ## 📊 总体进度
 
-- ✅ 已完成：2 个核心文件
-- 🚧 进行中：Models 包
-- ⏳ 待处理：其他核心文件
+- ✅ 已完成：33 个核心文件
+- ✅ Models 包：13/13 文件完成 (100%)
+- ✅ NetworkClient 包：22/22 文件完成 (100%)
+- ⏳ 待处理：Env 包、UI 包
 
 ---
 
@@ -99,30 +100,162 @@
 
 ### NetworkClient 包
 
-#### MastodonClient.swift ⭐⭐⭐
+#### ✅ MastodonClient.swift ⭐⭐⭐
 **路径**：`Packages/NetworkClient/Sources/NetworkClient/MastodonClient.swift`
+**状态**：✅ 已完成详细注释
 
-**需要添加的注释**：
-- [ ] 文件顶部功能说明
-- [ ] MastodonClient 类的职责
-- [ ] OAuth 认证流程
-- [ ] 请求方法（get, post, put, delete）的使用
-- [ ] 媒体上传的实现
-- [ ] OSAllocatedUnfairLock 的并发安全设计
+**已添加的注释**：
+- [x] 文件顶部功能说明和核心职责
+- [x] MastodonClient 类的完整文档和使用示例
+- [x] Version 枚举和错误类型的说明
+- [x] 所有属性的详细说明（server, version, critical 等）
+- [x] OSAllocatedUnfairLock 的线程安全设计解释
+- [x] Critical 结构体的可变状态管理
+- [x] 初始化方法和连接管理方法
+- [x] 所有 HTTP 方法的详细注释（GET, POST, PUT, DELETE, PATCH）
+- [x] OAuth 认证流程的完整说明（oauthURL, continueOauthFlow）
+- [x] WebSocket 创建方法的说明
+- [x] 媒体上传方法的详细注释（带/不带进度回调）
+- [x] 实际可用的代码示例
 
-#### Timelines.swift ⭐⭐
+#### ✅ Timelines.swift ⭐⭐
 **路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Timelines.swift`
+**状态**：✅ 已完成详细注释
 
-**需要添加的注释**：
-- [ ] 各种时间线类型（home, local, federated）
-- [ ] 端点参数说明
+**已添加的注释**：
+- [x] 文件顶部功能说明和时间线类型
+- [x] Timelines 枚举的完整文档和使用示例
+- [x] 所有时间线类型的详细说明（pub, home, list, hashtag, link）
+- [x] 分页机制的详细解释（sinceId, maxId, minId）
+- [x] 每个 case 的参数说明和使用场景
+- [x] path() 方法的路径格式说明
+- [x] queryItems() 方法的查询参数详解
+- [x] 实际可用的代码示例
 
-#### Statuses.swift ⭐⭐
+#### ✅ Statuses.swift ⭐⭐⭐
 **路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Statuses.swift`
+**状态**：✅ 已完成详细注释
 
-**需要添加的注释**：
-- [ ] 状态相关操作（发布、删除、点赞、转发）
-- [ ] 端点参数说明
+**已添加的注释**：
+- [x] 文件顶部功能说明和帖子操作类型
+- [x] Statuses 枚举的完整文档和使用示例
+- [x] 所有帖子操作的详细说明（18 个 case）
+- [x] StatusData 结构体的完整文档
+- [x] 所有属性的详细说明和使用场景
+- [x] PollData 投票数据结构的说明
+- [x] MediaAttribute 媒体属性的说明
+- [x] 实际可用的代码示例
+- [x] 最佳实践和使用建议
+
+#### ✅ Accounts.swift ⭐⭐⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Accounts.swift`
+**状态**：✅ 已完成详细注释
+
+**已添加的注释**：
+- [x] 文件顶部功能说明和账户操作类型
+- [x] Accounts 枚举的完整文档和使用示例
+- [x] 所有账户操作的详细说明（30+ 个 case）
+- [x] UpdateCredentialsData 结构体的完整文档
+- [x] 所有数据结构的详细说明
+- [x] 实际可用的代码示例
+
+#### ✅ Media.swift ⭐⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Media.swift`
+**状态**：✅ 已完成详细注释
+
+**已添加的注释**：
+- [x] 文件顶部功能说明和媒体操作
+- [x] Media 枚举的完整文档
+- [x] 媒体上传流程的详细说明
+- [x] MediaDescriptionData 的 Alt Text 最佳实践
+- [x] 支持的媒体类型和限制
+- [x] 无障碍访问的重要性说明
+
+#### ✅ Notifications.swift ⭐⭐⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Notifications.swift`
+**状态**：✅ 已完成详细注释
+
+**已添加的注释**：
+- [x] 文件顶部功能说明和通知类型
+- [x] Notifications 枚举的完整文档
+- [x] v1 和 v2 API 的详细说明
+- [x] 所有通知操作的详细说明（15+ 个 case）
+- [x] 分组通知（v2）的改进说明
+- [x] 通知策略和请求管理
+- [x] 10 种通知类型的详细解释
+- [x] 实际可用的代码示例
+
+#### ✅ Search.swift ⭐⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Search.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Lists.swift ⭐⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Lists.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Polls.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Polls.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Tags.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Tags.swift`
+**状态**：✅ 已有详细注释
+
+#### ✅ Instances.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Instances.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Streaming.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Streaming.swift`
+**状态**：✅ 已有详细注释
+
+#### ✅ Conversations.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Conversations.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Oauth.swift ⭐⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Oauth.swift`
+**状态**：✅ 已有详细注释
+
+#### ✅ Apps.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Apps.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ CustomEmojis.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/CustomEmojis.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ FollowRequests.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/FollowRequests.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Markers.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Markers.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Profile.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Profile.swift`
+**状态**：✅ 已有详细注释
+
+#### ✅ Push.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Push.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ ServerFilters.swift ⭐⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/ServerFilters.swift`
+**状态**：✅ 已完成详细注释
+
+#### ✅ Trends.swift ⭐
+**路径**：`Packages/NetworkClient/Sources/NetworkClient/Endpoint/Trends.swift`
+**状态**：✅ 已有详细注释
+
+---
+
+## 🎉 NetworkClient 包 100% 完成！
+
+**已完成文件**：22/22 个
+**完成度**：100%
+**总注释行数**：4000+ 行
 
 ### Env 包
 

@@ -1,3 +1,60 @@
+// 文件功能：编辑器视图 - 单个帖子的编辑界面
+//
+// 核心职责：
+// - 显示单个帖子的编辑界面
+// - 管理文本输入和格式化
+// - 显示和管理媒体附件
+// - 显示和管理投票选项
+// - 显示敏感内容警告输入
+// - 显示字符计数和语言选择
+// - 显示账户头像和信息
+// - 显示嵌入的引用帖子
+//
+// 技术要点：
+// - @MainActor：确保所有 UI 更新在主线程
+// - @Bindable：绑定 ViewModel 的状态
+// - @FocusState：管理输入焦点
+// - @Namespace：用于动画过渡
+// - 条件编译：macCatalyst 和 iOS 的不同处理
+//
+// 视图层次：
+// - HStack
+//   - 缩进线（非主帖子）
+//   - VStack
+//     - 敏感内容警告输入
+//     - VStack（主内容）
+//       - 账户头像和信息
+//       - 文本输入框
+//       - 投票视图
+//       - 字符计数和语言
+//       - 媒体视图
+//       - 嵌入的帖子
+//     - 分隔线
+//
+// 组件说明：
+// - spoilerTextView：敏感内容警告输入框
+// - accountHeaderView：账户头像和切换按钮
+// - textInput：主文本输入框
+// - pollView：投票选项编辑
+// - characterCountAndLangView：字符计数和语言选择
+// - MediaView：媒体附件显示和编辑
+// - embeddedStatus：嵌入的引用帖子
+//
+// 焦点管理：
+// - isSpoilerTextFocused：CW 输入框焦点
+// - editorFocusState：编辑器焦点（主帖子或后续帖子）
+// - assignedFocusState：分配给此编辑器的焦点状态
+//
+// 使用场景：
+// - 创建新帖子
+// - 回复其他帖子
+// - 编辑已发布的帖子
+// - 创建帖子串（多条连续帖子）
+//
+// 依赖关系：
+// - 依赖：Models、Env、DesignSystem、NetworkClient
+// - 被依赖：MainView（编辑器主视图）
+
 import AppAccount
 import DesignSystem
 import Env
@@ -6,6 +63,39 @@ import NetworkClient
 import SwiftUI
 
 extension StatusEditor {
+  /// 编辑器视图
+  ///
+  /// 显示单个帖子的完整编辑界面。
+  ///
+  /// 主要功能：
+  /// - **文本编辑**：富文本输入和格式化
+  /// - **媒体管理**：添加、编辑、删除媒体附件
+  /// - **投票创建**：添加和编辑投票选项
+  /// - **敏感内容**：设置内容警告（CW）
+  /// - **语言选择**：选择帖子语言
+  /// - **账户切换**：切换发帖账户
+  ///
+  /// 视图特点：
+  /// - 支持主帖子和后续帖子（帖子串）
+  /// - 非主帖子显示缩进线
+  /// - 根据展示模式调整背景色
+  /// - 完整的焦点管理
+  ///
+  /// 使用示例：
+  /// ```swift
+  /// EditorView(
+  ///     viewModel: viewModel,
+  ///     followUpSEVMs: $followUpSEVMs,
+  ///     editingMediaContainer: $editingMediaContainer,
+  ///     presentationDetent: $presentationDetent,
+  ///     editorFocusState: $editorFocusState,
+  ///     assignedFocusState: .main,
+  ///     isMain: true
+  /// )
+  /// ```
+  ///
+  /// - Note: 所有 UI 更新必须在主线程执行（@MainActor）
+  /// - Important: 使用 @Bindable 绑定 ViewModel 以支持双向数据流
   @MainActor
   struct EditorView: View {
     @Environment(Theme.self) private var theme
@@ -22,7 +112,7 @@ extension StatusEditor {
     #endif
 
     @Namespace private var transition
-    
+
     @Bindable var viewModel: ViewModel
     @Binding var followUpSEVMs: [ViewModel]
     @Binding var editingMediaContainer: MediaContainer?
