@@ -1,3 +1,38 @@
+/*
+ * EditAccountView.swift
+ * IceCubesApp - 编辑账户资料视图
+ *
+ * 文件功能：
+ * 提供编辑 Mastodon 账户资料的界面，包括头像、横幅、个人简介和自定义字段。
+ *
+ * 核心职责：
+ * - 加载当前账户资料
+ * - 编辑头像和横幅图片
+ * - 修改显示名称和个人简介
+ * - 管理自定义字段（最多 4 个）
+ * - 配置帖子隐私和可见性设置
+ * - 保存修改到服务器
+ *
+ * 技术要点：
+ * - EditAccountViewModel 管理编辑状态
+ * - PhotosPicker 选择图片
+ * - Form 表单布局
+ * - 异步保存操作
+ * - 错误处理和提示
+ *
+ * 使用场景：
+ * - 设置页面的"编辑资料"
+ * - 修改账户显示信息
+ * - 更新头像和横幅
+ *
+ * 依赖关系：
+ * - DesignSystem: Theme、布局
+ * - Env: MastodonClient、UserPreferences
+ * - Models: Account
+ * - NetworkClient: Accounts 端点
+ * - NukeUI: 图片加载
+ */
+
 import DesignSystem
 import Env
 import Models
@@ -5,6 +40,9 @@ import NetworkClient
 import NukeUI
 import SwiftUI
 
+/// 编辑账户资料视图。
+///
+/// 提供完整的账户资料编辑界面。
 @MainActor
 public struct EditAccountView: View {
   @Environment(\.dismiss) private var dismiss

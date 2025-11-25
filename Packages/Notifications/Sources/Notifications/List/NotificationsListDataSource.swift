@@ -1,33 +1,88 @@
+/*
+ * NotificationsListDataSource.swift
+ * IceCubesApp - 通知列表数据源
+ *
+ * 文件功能：
+ * 管理通知列表的数据加载、分页、合并和实时更新。
+ *
+ * 核心职责：
+ * - 支持 Mastodon V1 和 V2 通知 API
+ * - 合并相似通知（如多个点赞合并显示）
+ * - 处理分页加载和下拉刷新
+ * - 处理实时流事件更新
+ * - 标记通知为已读
+ *
+ * 技术要点：
+ * - V2 API 使用分组通知（NotificationGroup）
+ * - V1 API 使用传统通知列表
+ * - 合并逻辑（ConsolidatedNotification）
+ * - 实时流事件集成
+ * - 分页策略（30 条/页）
+ *
+ * 使用场景：
+ * - NotificationsListView 的数据管理
+ * - 通知列表加载和刷新
+ * - 实时通知更新
+ *
+ * 依赖关系：
+ * - Models: Notification、ConsolidatedNotification、NotificationGroup
+ * - NetworkClient: Notifications 端点
+ * - Env: CurrentInstance、StreamEvent
+ */
+
 import Env
 import Foundation
 import Models
 import NetworkClient
 
+/// 通知列表数据源。
+///
+/// 管理通知的加载、合并和实时更新。
 @MainActor
 public final class NotificationsListDataSource {
+  /// 常量定义。
   enum Constants {
+    /// 每页通知数量限制。
     static let notificationLimit: Int = 30
   }
 
-  // Internal state
+  // MARK: - Internal state
+
+  /// 合并后的通知列表（内部存储）。
   private var consolidatedNotifications: [ConsolidatedNotification] = []
+  /// 最后一个通知组（V2 API 分页用）。
   private var lastNotificationGroup: Models.NotificationGroup?
 
+  /// 初始化方法。
   public init() {}
 
   // MARK: - Public Methods
 
+  /// 重置数据源状态。
   public func reset() {
     consolidatedNotifications = []
     lastNotificationGroup = nil
   }
 
+  /// 拉取结果结构。
   public struct FetchResult {
+    /// 合并后的通知列表。
     let notifications: [ConsolidatedNotification]
+    /// 下一页状态。
     let nextPageState: NotificationsListState.PagingState
+    /// 是否包含关注请求。
     let containsFollowRequests: Bool
   }
 
+  /// 拉取通知列表（首次加载或下拉刷新）。
+  ///
+  /// 根据实例支持的 API 版本自动选择 V1 或 V2 API。
+  ///
+  /// - Parameters:
+  ///   - client: Mastodon 客户端。
+  ///   - selectedType: 可选的通知类型过滤器。
+  ///   - lockedAccountId: 可选的锁定账户 ID（仅显示特定用户的通知）。
+  /// - Returns: 拉取结果。
   public func fetchNotifications(
     client: MastodonClient,
     selectedType: Models.Notification.NotificationType?,
@@ -75,6 +130,13 @@ public final class NotificationsListDataSource {
     )
   }
 
+  /// 拉取下一页通知。
+  ///
+  /// - Parameters:
+  ///   - client: Mastodon 客户端。
+  ///   - selectedType: 可选的通知类型过滤器。
+  ///   - lockedAccountId: 可选的锁定账户 ID。
+  /// - Returns: 拉取结果。
   public func fetchNextPage(
     client: MastodonClient,
     selectedType: Models.Notification.NotificationType?,
@@ -104,12 +166,19 @@ public final class NotificationsListDataSource {
     )
   }
 
+  /// 拉取通知策略（V2 API）。
+  ///
+  /// 通知策略控制哪些通知被过滤。
+  ///
+  /// - Parameter client: Mastodon 客户端。
+  /// - Returns: 通知策略对象（如果支持）。
   public func fetchPolicy(client: MastodonClient) async -> Models.NotificationsPolicy? {
     try? await client.get(endpoint: Notifications.policy, forceVersion: .v2)
   }
 
   // MARK: - V1 API Methods
 
+  /// 使用 V1 API 拉取通知（首次加载）。
   private func fetchNotificationsV1(
     client: MastodonClient,
     selectedType: Models.Notification.NotificationType?,
@@ -134,6 +203,7 @@ public final class NotificationsListDataSource {
     consolidatedNotifications = await notifications.consolidated(selectedType: selectedType)
   }
 
+  /// 使用 V1 API 刷新通知（下拉刷新）。
   private func refreshNotificationsV1(
     client: MastodonClient,
     selectedType: Models.Notification.NotificationType?,
@@ -158,6 +228,7 @@ public final class NotificationsListDataSource {
     )
   }
 
+  /// 使用 V1 API 拉取下一页通知。
   private func fetchNextPageV1(
     client: MastodonClient,
     selectedType: Models.Notification.NotificationType?,
@@ -222,6 +293,7 @@ public final class NotificationsListDataSource {
 
   // MARK: - V2 API Methods
 
+  /// 使用 V2 API 拉取通知（首次加载）。
   private func fetchNotificationsV2(
     client: MastodonClient,
     selectedType: Models.Notification.NotificationType?
@@ -270,11 +342,21 @@ public final class NotificationsListDataSource {
 
   // MARK: - Stream Event Handling
 
+  /// 实时流事件处理结果。
   public struct StreamEventResult {
     let notifications: [ConsolidatedNotification]
     let containsFollowRequest: Bool
   }
 
+  /// 处理实时流通知事件。
+  ///
+  /// 将新通知合并到现有列表中。
+  ///
+  /// - Parameters:
+  ///   - event: 流事件。
+  ///   - selectedType: 可选的通知类型过滤器。
+  ///   - lockedAccountId: 可选的锁定账户 ID。
+  /// - Returns: 流事件处理结果（如果事件有效）。
   public func handleStreamEvent(
     event: any StreamEvent,
     selectedType: Models.Notification.NotificationType?,
@@ -356,6 +438,9 @@ public final class NotificationsListDataSource {
 
   // MARK: - Helper Methods
 
+  /// 计算查询类型（V1 API 排除类型）。
+  ///
+  /// 如果选择了特定类型，返回要排除的其他类型。
   private func queryTypes(for selectedType: Models.Notification.NotificationType?) -> [String]? {
     if let selectedType {
       var excludedTypes = Models.Notification.NotificationType.allCases
@@ -365,6 +450,9 @@ public final class NotificationsListDataSource {
     return nil
   }
 
+  /// 标记通知为已读。
+  ///
+  /// 使用最新通知 ID 更新已读标记。
   private func markAsRead(client: MastodonClient) {
     guard let id = consolidatedNotifications.first?.mostRecentNotificationId else { return }
     Task {
@@ -374,6 +462,9 @@ public final class NotificationsListDataSource {
     }
   }
 
+  /// 合并 V2 通知组。
+  ///
+  /// 将新的通知组与现有组合并，更新账户列表和时间戳。
   private func mergeV2Notifications(_ newGroups: [ConsolidatedNotification]) {
     for newGroup in newGroups.reversed() {
       if let groupKey = newGroup.groupKey {

@@ -1,10 +1,46 @@
+/*
+ * Theme.swift
+ * IceCubesApp - 主题系统
+ *
+ * 文件功能：
+ * 管理应用的全局主题设置，包括颜色方案、字体、布局和显示样式。
+ *
+ * 核心职责：
+ * - 提供颜色集切换和自定义颜色设置
+ * - 管理头像位置、形状和状态显示样式
+ * - 控制字体选择和缩放
+ * - 持久化所有主题设置到 UserDefaults
+ * - 计算对比色以确保可访问性
+ *
+ * 技术要点：
+ * - @Observable + @MainActor 确保 UI 线程安全
+ * - @AppStorage 自动持久化设置
+ * - 单例模式 (shared) 全局访问
+ * - didSet 观察器同步内存与存储
+ * - 亮度计算确保色彩对比度
+ *
+ * 使用场景：
+ * - 应用启动时初始化主题
+ * - 设置页面修改主题选项
+ * - 所有视图通过 @Environment(Theme.self) 访问
+ *
+ * 依赖关系：
+ * - SwiftUI: Color、@AppStorage
+ * - Combine: 响应式更新（虽然现在主要用 @Observable）
+ */
+
 import Combine
 import SwiftUI
 
+/// 应用主题管理类。
+///
+/// 单例模式，管理所有主题相关设置和颜色方案。
 @MainActor
 @Observable
 public final class Theme {
+  /// 主题存储类（封装所有 @AppStorage 属性）。
   final class ThemeStorage {
+    /// UserDefaults 存储键枚举。
     enum ThemeKey: String {
       case colorScheme, tint, label, primaryBackground, secondaryBackground
       case avatarPosition2, avatarShape2, statusActionsDisplay, statusDisplayStyle
@@ -46,13 +82,20 @@ public final class Theme {
     init() {}
   }
 
+  /// 字体类型枚举。
   public enum FontState: Int, CaseIterable {
+    /// 系统默认字体。
     case system
+    /// Open Dyslexic 字体（辅助阅读障碍）。
     case openDyslexic
+    /// Atkinson Hyperlegible 字体（高可读性）。
     case hyperLegible
+    /// SF Rounded 字体（圆角系统字体）。
     case SFRounded
+    /// 自定义字体。
     case custom
 
+    /// 返回本地化标题。
     public var title: LocalizedStringKey {
       switch self {
       case .system:
@@ -69,9 +112,14 @@ public final class Theme {
     }
   }
 
+  /// 头像位置枚举。
   public enum AvatarPosition: String, CaseIterable {
-    case leading, top
+    /// 左侧显示头像（默认）。
+    case leading
+    /// 顶部显示头像。
+    case top
 
+    /// 返回本地化描述。
     public var description: LocalizedStringKey {
       switch self {
       case .leading:
@@ -82,9 +130,14 @@ public final class Theme {
     }
   }
 
+  /// 次要状态操作枚举（分享或书签）。
   public enum StatusActionSecondary: String, CaseIterable {
-    case share, bookmark
+    /// 分享按钮。
+    case share
+    /// 书签按钮。
+    case bookmark
 
+    /// 返回本地化描述。
     public var description: LocalizedStringKey {
       switch self {
       case .share:
@@ -95,9 +148,14 @@ public final class Theme {
     }
   }
 
+  /// 头像形状枚举。
   public enum AvatarShape: String, CaseIterable {
-    case circle, rounded
+    /// 圆形头像。
+    case circle
+    /// 圆角矩形头像。
+    case rounded
 
+    /// 返回本地化描述。
     public var description: LocalizedStringKey {
       switch self {
       case .circle:
@@ -108,9 +166,16 @@ public final class Theme {
     }
   }
 
+  /// 状态操作显示模式枚举。
   public enum StatusActionsDisplay: String, CaseIterable {
-    case full, discret, none
+    /// 完整显示（按钮 + 数字）。
+    case full
+    /// 离散显示（仅按钮）。
+    case discret
+    /// 不显示操作按钮。
+    case none
 
+    /// 返回本地化描述。
     public var description: LocalizedStringKey {
       switch self {
       case .full:
@@ -123,9 +188,16 @@ public final class Theme {
     }
   }
 
+  /// 状态显示样式枚举。
   public enum StatusDisplayStyle: String, CaseIterable {
-    case large, medium, compact
+    /// 大号显示（默认）。
+    case large
+    /// 中号显示。
+    case medium
+    /// 紧凑显示。
+    case compact
 
+    /// 返回本地化描述。
     public var description: LocalizedStringKey {
       switch self {
       case .large:
@@ -138,7 +210,9 @@ public final class Theme {
     }
   }
 
+  /// 缓存的自定义字体对象。
   private var _cachedChoosenFont: UIFont?
+  /// 用户选择的自定义字体（使用 NSKeyedArchiver 序列化）。
   public var chosenFont: UIFont? {
     get {
       if let _cachedChoosenFont {
@@ -165,20 +239,24 @@ public final class Theme {
     }
   }
 
+  /// 主题存储实例。
   let themeStorage = ThemeStorage()
 
+  /// 是否曾经设置过主题（用于首次启动检测）。
   public var isThemePreviouslySet: Bool {
     didSet {
       themeStorage.isThemePreviouslySet = isThemePreviouslySet
     }
   }
 
+  /// 选择的颜色方案（深色/浅色）。
   public var selectedScheme: ColorScheme {
     didSet {
       themeStorage.selectedScheme = selectedScheme
     }
   }
 
+  /// 主题色（强调色）。
   public var tintColor: Color {
     didSet {
       themeStorage.tintColor = tintColor
@@ -186,6 +264,7 @@ public final class Theme {
     }
   }
 
+  /// 主背景色。
   public var primaryBackgroundColor: Color {
     didSet {
       themeStorage.primaryBackgroundColor = primaryBackgroundColor
@@ -193,12 +272,14 @@ public final class Theme {
     }
   }
 
+  /// 次背景色（卡片、分隔等）。
   public var secondaryBackgroundColor: Color {
     didSet {
       themeStorage.secondaryBackgroundColor = secondaryBackgroundColor
     }
   }
 
+  /// 标签文本颜色。
   public var labelColor: Color {
     didSet {
       themeStorage.labelColor = labelColor
@@ -206,10 +287,12 @@ public final class Theme {
     }
   }
 
+  /// 对比主题色（自动计算以确保可访问性）。
   public private(set) var contrastingTintColor: Color
 
-  // set contrastingTintColor to either labelColor or primaryBackgroundColor, whichever contrasts
-  // better against the tintColor
+  /// 计算对比主题色（选择与 tintColor 对比度更高的颜色）。
+  ///
+  /// 使用亮度算法判断 labelColor 和 primaryBackgroundColor 哪个与 tintColor 对比度更好。
   private func computeContrastingTintColor() {
     func luminance(_ color: Color.Resolved) -> Float {
       return 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
@@ -302,10 +385,13 @@ public final class Theme {
     }
   }
 
+  /// 当前选择的颜色集名称。
   public var selectedSet: ColorSetName = .iceCubeDark
 
+  /// 全局单例。
   public static let shared = Theme()
 
+  /// 恢复默认主题设置。
   public func restoreDefault() {
     applySet(set: themeStorage.selectedScheme == .dark ? .iceCubeDark : .iceCubeLight)
     isThemePreviouslySet = true
@@ -347,6 +433,7 @@ public final class Theme {
     computeContrastingTintColor()
   }
 
+  /// 所有可用的颜色集。
   public static var allColorSet: [ColorSet] {
     [
       IceCubeDark(),
@@ -366,11 +453,17 @@ public final class Theme {
     ]
   }
 
+  /// 应用指定的颜色集。
+  ///
+  /// - Parameter set: 颜色集名称。
   public func applySet(set: ColorSetName) {
     selectedSet = set
     setColor(withName: set)
   }
 
+  /// 根据颜色集名称设置所有颜色属性。
+  ///
+  /// - Parameter name: 颜色集名称。
   public func setColor(withName name: ColorSetName) {
     let colorSet = Theme.allColorSet.filter { $0.name == name }.first ?? IceCubeDark()
     selectedScheme = colorSet.scheme

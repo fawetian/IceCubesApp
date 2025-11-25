@@ -1,3 +1,37 @@
+/*
+ * AccountDetailView.swift
+ * IceCubesApp - 账户详情视图
+ *
+ * 文件功能：
+ * 展示 Mastodon 账户的完整个人资料，包括头像、横幅、简介、统计数据、特色标签和帖子列表。
+ *
+ * 核心职责：
+ * - 加载并显示账户信息和关系状态
+ * - 提供关注/取消关注等账户操作
+ * - 展示账户的帖子、回复、媒体等标签页
+ * - 处理账户翻译和关系备注编辑
+ * - 监听实时事件更新账户状态
+ *
+ * 技术要点：
+ * - @State 管理加载状态和账户数据
+ * - TaskGroup 并发加载账户、关系、熟悉关注者
+ * - TabManager 管理多个标签页的数据源
+ * - ScrollViewReader 实现滚动到标签
+ * - 实时流事件处理
+ *
+ * 使用场景：
+ * - 点击用户名跳转到个人资料页
+ * - 查看其他用户的详细信息
+ * - 关注/屏蔽等账户操作
+ *
+ * 依赖关系：
+ * - DesignSystem: 主题和布局
+ * - Env: CurrentAccount、RouterPath、StreamWatcher
+ * - Models: Account、Relationship
+ * - NetworkClient: MastodonClient
+ * - StatusKit: 状态列表组件
+ */
+
 import DesignSystem
 import EmojiText
 import Env
@@ -6,6 +40,9 @@ import NetworkClient
 import StatusKit
 import SwiftUI
 
+/// 账户详情视图。
+///
+/// 完整展示 Mastodon 账户的个人资料和帖子列表。
 @MainActor
 public struct AccountDetailView: View {
   @Environment(\.openURL) private var openURL
@@ -20,30 +57,51 @@ public struct AccountDetailView: View {
   @Environment(MastodonClient.self) private var client
   @Environment(RouterPath.self) private var routerPath
 
+  /// 账户 ID。
   private let accountId: String
 
+  /// 视图状态（加载中、已加载、错误）。
   @State private var viewState: AccountDetailState = .loading
+  /// 当前账户与目标账户的关系。
   @State private var relationship: Relationship?
+  /// 熟悉的关注者列表。
   @State private var familiarFollowers: [Account] = []
+  /// 关注按钮视图模型。
   @State private var followButtonViewModel: FollowButtonViewModel?
+  /// 账户简介翻译结果。
   @State private var translation: Translation?
+  /// 是否正在加载翻译。
   @State private var isLoadingTranslation = false
+  /// 是否为当前用户自己的账户。
   @State private var isCurrentUser: Bool = false
 
+  /// 是否显示屏蔽确认对话框。
   @State private var showBlockConfirmation: Bool = false
+  /// 是否正在编辑关系备注。
   @State private var isEditingRelationshipNote: Bool = false
+  /// 是否显示翻译视图。
   @State private var showTranslateView: Bool = false
+  /// 标签页管理器（管理帖子、回复、媒体等标签）。
   @State private var tabManager: AccountTabManager?
 
+  /// 是否在导航栏显示账户名称。
   @State private var displayTitle: Bool = false
 
-  /// When coming from a URL like a mention tap in a status.
+  /// 初始化方法（通过账户 ID）。
+  ///
+  /// 用于从 URL 或提及跳转到账户详情。
+  ///
+  /// - Parameter accountId: 账户 ID。
   public init(accountId: String) {
     self.accountId = accountId
     _viewState = .init(initialValue: .loading)
   }
 
-  /// When the account is already fetched by the parent caller.
+  /// 初始化方法（已有账户对象）。
+  ///
+  /// 当父视图已经获取了账户数据时使用。
+  ///
+  /// - Parameter account: 账户对象。
   public init(account: Account) {
     self.accountId = account.id
     _viewState = .init(

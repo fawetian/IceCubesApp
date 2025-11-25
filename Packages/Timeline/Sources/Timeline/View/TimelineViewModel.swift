@@ -1,3 +1,36 @@
+/*
+ * TimelineViewModel.swift
+ * IceCubesApp - 时间线视图模型
+ *
+ * 文件功能：
+ * 管理时间线的业务逻辑，包括数据拉取、缓存、分页、实时更新和状态管理。
+ *
+ * 核心职责：
+ * - 协调 TimelineDatasource、TimelineCache 和 TimelineStatusFetcher 完成数据流转
+ * - 监听过滤器切换并触发数据重新加载
+ * - 处理下拉刷新、向上/向下分页、Gap 加载等交互
+ * - 管理实时流事件（新帖子、删除、更新）
+ * - 维护已读标记和未读提示
+ *
+ * 技术要点：
+ * - @Observable + @MainActor 保证 UI 更新线程安全
+ * - willSet/didSet 监听 timeline 变化自动触发任务
+ * - Task 管理异步拉取并支持取消
+ * - 与 StreamWatcher 集成实现实时推送
+ * - 支持缓存恢复和 Marker 断点续传
+ *
+ * 使用场景：
+ * - TimelineView 的核心数据源
+ * - 时间线列表的刷新、分页逻辑
+ * - 实时流事件的处理和 UI 更新
+ *
+ * 依赖关系：
+ * - Env: StreamWatcher、UserPreferences、StatusDataControllerProvider
+ * - Models: Status、TimelineFilter、Marker、Tag
+ * - NetworkClient: MastodonClient
+ * - StatusKit: StatusesState
+ */
+
 import Env
 import Models
 import NetworkClient
@@ -5,10 +38,17 @@ import Observation
 import StatusKit
 import SwiftUI
 
+/// 时间线视图模型。
+///
+/// 负责管理时间线的完整生命周期，包括数据拉取、缓存、分页和实时更新。
+/// 与 `TimelineView` 绑定，驱动 UI 状态变化。
 @MainActor
 @Observable class TimelineViewModel {
+  /// 需要滚动到的帖子 ID（用于自动定位）。
   var scrollToId: String?
+  /// 当前时间线的状态（加载中、已加载、错误）。
   var statusesState: StatusesState = .loading
+  /// 当前展示的时间线过滤器（触发数据重新加载）。
   var timeline: TimelineFilter = .home {
     willSet {
       if timeline == .home,
@@ -54,23 +94,31 @@ import SwiftUI
     }
   }
 
+  /// 当前正在执行的时间线拉取任务（用于取消）。
   private(set) var timelineTask: Task<Void, Never>?
 
+  /// 当前标签详情（仅标签时间线使用）。
   var tag: Tag?
 
-  // Internal source of truth for a timeline.
+  /// 时间线数据源（内存中的状态与 Gap 管理）。
   @ObservationIgnored
   private(set) var datasource = TimelineDatasource()
+  /// 状态拉取器（网络请求抽象）。
   private let statusFetcher: TimelineStatusFetching
 
+  /// 持久化缓存（SQLite 存储）。
   @ObservationIgnored
   private let cache = TimelineCache()
 
+  /// 时间线拉取限制常量。
   private enum Constants {
+    /// 单次完整拉取最多获取的帖子数（用于追赶未读）。
     static let fullTimelineFetchLimit = 800
+    /// 最大分页数（按每页 40 条计算）。
     static let fullTimelineFetchMaxPages = fullTimelineFetchLimit / 40
   }
 
+  /// 是否启用完整时间线拉取（追赶未读）。
   private var isFullTimelineFetchEnabled: Bool {
     guard UserPreferences.shared.fullTimelineFetch else { return false }
 
@@ -82,13 +130,16 @@ import SwiftUI
     }
   }
 
+  /// 是否启用缓存功能（需满足多个条件）。
   private var isCacheEnabled: Bool {
     canFilterTimeline && timeline.supportNewestPagination && client?.isAuth == true
   }
 
+  /// 当前可见的帖子列表（用于记录已读位置）。
   @ObservationIgnored
   private var visibleStatuses: [Status] = []
 
+  /// 是否允许处理实时流事件（拉取期间禁用）。
   private var canStreamEvents: Bool = true {
     didSet {
       if canStreamEvents {
@@ -97,9 +148,11 @@ import SwiftUI
     }
   }
 
+  /// 是否允许过滤时间线内容。
   @ObservationIgnored
   var canFilterTimeline: Bool = true
 
+  /// 是否正在流式监听时间线（用于本地/联邦时间线）。
   var isStreamingTimeline: Bool = false {
     didSet {
       if isStreamingTimeline != oldValue {
@@ -108,6 +161,7 @@ import SwiftUI
     }
   }
 
+  /// Mastodon API 客户端（切换时重置数据源）。
   var client: MastodonClient? {
     didSet {
       if oldValue != client {
@@ -118,19 +172,27 @@ import SwiftUI
     }
   }
 
+  /// 顶部"回到顶部"按钮是否可见。
   var scrollToTopVisible: Bool = false
 
+  /// 当前服务器名称（用于显示）。
   var serverName: String {
     client?.server ?? "Error"
   }
 
+  /// 未读帖子观察器（管理待读提示）。
   let pendingStatusesObserver: TimelineUnreadStatusesObserver = .init()
+  /// Mastodon Marker 数据（用于断点续传）。
   var marker: Marker.Content?
 
+  /// 初始化方法。
+  ///
+  /// - Parameter statusFetcher: 自定义状态拉取器（默认使用 `TimelineStatusFetcher`）。
   init(statusFetcher: TimelineStatusFetching = TimelineStatusFetcher()) {
     self.statusFetcher = statusFetcher
   }
 
+  /// 拉取标签详情（仅标签时间线使用）。
   private func fetchTag(id: String) async {
     guard let client else { return }
     do {
@@ -141,10 +203,12 @@ import SwiftUI
     } catch {}
   }
 
+  /// 重置数据源（清空所有缓存的帖子）。
   func reset() async {
     await datasource.reset()
   }
 
+  /// 处理特殊过滤器 `.latest` 和 `.resume`（用于刷新或恢复）。
   private func handleLatestOrResume(_ oldValue: TimelineFilter) async {
     if timeline == .latest || timeline == .resume {
       await clearCache(filter: oldValue)
@@ -157,8 +221,10 @@ import SwiftUI
 }
 
 // MARK: - Cache
+// 缓存管理扩展
 
 extension TimelineViewModel {
+  /// 将当前数据源内容写入缓存。
   private func cache() async {
     if let client, isCacheEnabled {
       let items = await datasource.getItems()
@@ -166,6 +232,7 @@ extension TimelineViewModel {
     }
   }
 
+  /// 从缓存恢复时间线条目。
   private func getCachedItems() async -> [TimelineItem]? {
     if let client, isCacheEnabled {
       return await cache.getItems(for: client.id, filter: timeline.id)
@@ -173,6 +240,7 @@ extension TimelineViewModel {
     return nil
   }
 
+  /// 清空指定过滤器的缓存。
   private func clearCache(filter: TimelineFilter) async {
     if let client, isCacheEnabled {
       await cache.clearCache(for: client.id, filter: filter.id)
@@ -182,8 +250,10 @@ extension TimelineViewModel {
 }
 
 // MARK: - StatusesFetcher
+// 状态拉取与刷新扩展
 
 extension TimelineViewModel: GapLoadingFetcher {
+  /// 下拉刷新（用户主动触发）。
   func pullToRefresh() async {
     timelineTask?.cancel()
 
@@ -193,6 +263,7 @@ extension TimelineViewModel: GapLoadingFetcher {
     await fetchNewestStatuses(pullToRefresh: true)
   }
 
+  /// 刷新时间线（程序自动触发）。
   func refreshTimeline() {
     timelineTask?.cancel()
     timelineTask = Task {
@@ -200,11 +271,15 @@ extension TimelineViewModel: GapLoadingFetcher {
     }
   }
 
+  /// 刷新内容过滤器（用户修改过滤设置时）。
   func refreshTimelineContentFilter() async {
     timelineTask?.cancel()
     await updateStatusesState()
   }
 
+  /// 从 Marker 断点恢复时间线。
+  ///
+  /// - Parameter from: Marker 内容（包含上次阅读的帖子 ID）。
   func fetchStatuses(from: Marker.Content) async throws {
     guard let client else { return }
     statusesState = .loading
@@ -221,6 +296,9 @@ extension TimelineViewModel: GapLoadingFetcher {
     await fetchNewestStatuses(pullToRefresh: false)
   }
 
+  /// 拉取最新帖子（首页加载或增量刷新）。
+  ///
+  /// - Parameter pullToRefresh: 是否为用户主动下拉刷新。
   func fetchNewestStatuses(pullToRefresh: Bool) async {
     guard let client else { return }
     do {
@@ -240,7 +318,7 @@ extension TimelineViewModel: GapLoadingFetcher {
     }
   }
 
-  // Hydrate statuses in the Timeline when statuses are empty.
+  /// 拉取首页（数据源为空时使用，优先从缓存恢复）。
   private func fetchFirstPage(client: MastodonClient) async throws {
     pendingStatusesObserver.pendingStatuses = []
 
@@ -284,7 +362,11 @@ extension TimelineViewModel: GapLoadingFetcher {
     }
   }
 
-  // Fetch pages from the top most status of the timeline.
+  /// 从最顶部的帖子开始向上拉取新页（追赶未读）。
+  ///
+  /// - Parameters:
+  ///   - latestStatus: 当前最新的帖子 ID。
+  ///   - client: Mastodon 客户端。
   private func fetchNewPagesFrom(latestStatus: String, client: MastodonClient) async throws {
     canStreamEvents = false
     let initialTimeline = timeline
@@ -405,10 +487,13 @@ extension TimelineViewModel: GapLoadingFetcher {
     }
   }
 
+  /// 下一页拉取错误。
   enum NextPageError: Error {
+    /// 内部错误（如数据源为空或缺少客户端）。
     case internalError
   }
 
+  /// 拉取下一页历史帖子（向下分页）。
   func fetchNextPage() async throws {
     let statuses = await datasource.get()
     guard let client, let lastId = statuses.last?.id else { throw NextPageError.internalError }
@@ -426,6 +511,9 @@ extension TimelineViewModel: GapLoadingFetcher {
       nextPageState: newStatuses.count < 20 ? .none : .hasNextPage)
   }
 
+  /// 帖子出现在视口时调用（用于记录已读）。
+  ///
+  /// - Parameter status: 出现的帖子。
   func statusDidAppear(status: Status) {
     pendingStatusesObserver.removeStatus(status: status)
     visibleStatuses.insert(status, at: 0)
@@ -437,10 +525,16 @@ extension TimelineViewModel: GapLoadingFetcher {
     }
   }
 
+  /// 帖子从视口消失时调用。
+  ///
+  /// - Parameter status: 消失的帖子。
   func statusDidDisappear(status: Status) {
     visibleStatuses.removeAll(where: { $0.id == status.id })
   }
 
+  /// 加载 Gap（填充时间线缺口）。
+  ///
+  /// - Parameter gap: 需要加载的 Gap。
   func loadGap(gap: TimelineGap) async {
     guard let client else { return }
 
@@ -536,8 +630,12 @@ extension TimelineViewModel: GapLoadingFetcher {
 }
 
 // MARK: - Marker handling
+// Mastodon 阅读进度标记管理
 
 extension TimelineViewModel {
+  /// 拉取 Marker（用于恢复上次阅读位置）。
+  ///
+  /// - Returns: Marker 内容（如果存在）。
   func fetchMarker() async -> Marker.Content? {
     guard let client else {
       return nil
@@ -550,6 +648,7 @@ extension TimelineViewModel {
     }
   }
 
+  /// 保存当前阅读进度到服务器。
   func saveMarker() {
     guard timeline == .home, let client else { return }
     Task {
@@ -564,8 +663,13 @@ extension TimelineViewModel {
 }
 
 // MARK: - Stream management
+// 实时流管理
 
 extension TimelineViewModel {
+  /// 判断时间线是否支持实时流。
+  ///
+  /// - Parameter timeline: 时间线过滤器。
+  /// - Returns: 是否支持流式更新。
   func canStreamTimeline(_ timeline: TimelineFilter) -> Bool {
     switch timeline {
     case .federated, .local:
@@ -575,6 +679,7 @@ extension TimelineViewModel {
     }
   }
 
+  /// 更新实时流监听器（根据当前时间线调整订阅）。
   private func updateStreamWatcher() {
     guard let client, client.isAuth else { return }
 
@@ -604,8 +709,12 @@ extension TimelineViewModel {
 }
 
 // MARK: - Event handling
+// 实时流事件处理
 
 extension TimelineViewModel {
+  /// 处理实时流事件（新帖子、删除、更新）。
+  ///
+  /// - Parameter event: 流事件对象。
   func handleEvent(event: any StreamEvent) async {
     guard let client = client, canStreamEvents else { return }
 
@@ -621,6 +730,7 @@ extension TimelineViewModel {
     }
   }
 
+  /// 处理新帖子事件（插入到顶部）。
   private func handleUpdateEvent(_ event: StreamEventUpdate, client: MastodonClient) async {
     let shouldStream =
       switch timeline {
@@ -645,6 +755,7 @@ extension TimelineViewModel {
     await updateStatusesStateWithAnimation()
   }
 
+  /// 处理帖子删除事件（从列表中移除）。
   private func handleDeleteEvent(_ event: StreamEventDelete) async {
     if await datasource.remove(event.status) != nil {
       await cache()
@@ -652,6 +763,7 @@ extension TimelineViewModel {
     }
   }
 
+  /// 处理帖子更新事件（替换原有内容）。
   private func handleStatusUpdateEvent(_ event: StreamEventStatusUpdate, client: MastodonClient)
     async
   {

@@ -1,17 +1,57 @@
+/*
+ * AccountsListView.swift
+ * IceCubesApp - 账户列表视图
+ *
+ * 文件功能：
+ * 展示账户列表，支持关注者、正在关注、屏蔽、静音等多种模式。
+ *
+ * 核心职责：
+ * - 根据模式（followers、following、blocked 等）加载账户列表
+ * - 显示账户行和关系状态
+ * - 支持搜索和分页加载
+ * - 显示关注请求（如果有）
+ *
+ * 技术要点：
+ * - AccountsListViewModel 管理数据和状态
+ * - 支持可搜索列表（仅限当前用户）
+ * - 分页加载下一页
+ * - 关注请求处理
+ *
+ * 使用场景：
+ * - 查看用户的关注者列表
+ * - 查看正在关注的账户
+ * - 管理屏蔽和静音列表
+ *
+ * 依赖关系：
+ * - DesignSystem: 主题和布局
+ * - Env: CurrentAccount、MastodonClient
+ * - Models: Account、Relationship
+ * - NetworkClient: Accounts 端点
+ */
+
 import DesignSystem
 import Env
 import Models
 import NetworkClient
 import SwiftUI
 
+/// 账户列表视图。
+///
+/// 根据不同模式展示账户列表（关注者、正在关注等）。
 @MainActor
 public struct AccountsListView: View {
   @Environment(Theme.self) private var theme
   @Environment(MastodonClient.self) private var client
   @Environment(CurrentAccount.self) private var currentAccount
+
+  /// 账户列表视图模型。
   @State private var viewModel: AccountsListViewModel
+  /// 是否已出现过（避免重复加载）。
   @State private var didAppear: Bool = false
 
+  /// 初始化方法。
+  ///
+  /// - Parameter mode: 账户列表模式（followers、following 等）。
   public init(mode: AccountsListMode) {
     _viewModel = .init(initialValue: .init(mode: mode))
   }
@@ -98,7 +138,7 @@ public struct AccountsListView: View {
             .listRowBackground(theme.primaryBackgroundColor)
           #endif
       }
-    case let .display(accounts, relationships, nextPageState):
+    case .display(let accounts, let relationships, let nextPageState):
       if case .followers = viewModel.mode,
         !currentAccount.followRequests.isEmpty
       {
@@ -161,7 +201,7 @@ public struct AccountsListView: View {
         EmptyView()
       }
 
-    case let .error(error):
+    case .error(let error):
       Text(error.localizedDescription)
         #if !os(visionOS)
           .listRowBackground(theme.primaryBackgroundColor)

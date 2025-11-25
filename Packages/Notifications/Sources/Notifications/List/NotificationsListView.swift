@@ -1,9 +1,45 @@
+/*
+ * NotificationsListView.swift
+ * IceCubesApp - 通知列表视图
+ *
+ * 文件功能：
+ * 展示 Mastodon 通知列表，支持按类型过滤、下拉刷新和实时更新。
+ *
+ * 核心职责：
+ * - 加载并显示通知列表（提及、关注、点赞、转发等）
+ * - 提供通知类型过滤（可选）
+ * - 展示通知策略和过滤的通知数量
+ * - 处理实时流事件更新
+ * - 支持下拉刷新和分页加载
+ *
+ * 技术要点：
+ * - NotificationsListDataSource 管理数据
+ * - NotificationsListState 管理视图状态
+ * - 支持锁定类型和账户 ID（查看特定通知）
+ * - 实时流事件处理
+ * - scenePhase 监听前后台切换
+ *
+ * 使用场景：
+ * - 通知 Tab 的主视图
+ * - 查看所有通知或特定类型通知
+ * - 查看特定用户的通知
+ *
+ * 依赖关系：
+ * - DesignSystem: 主题和布局
+ * - Env: CurrentAccount、StreamWatcher、RouterPath
+ * - Models: Notification、NotificationsPolicy
+ * - NetworkClient: MastodonClient
+ */
+
 import DesignSystem
 import Env
 import Models
 import NetworkClient
 import SwiftUI
 
+/// 通知列表视图。
+///
+/// 展示 Mastodon 通知，支持过滤和实时更新。
 @MainActor
 public struct NotificationsListView: View {
   @Environment(\.scenePhase) private var scenePhase
@@ -15,16 +51,29 @@ public struct NotificationsListView: View {
   @Environment(CurrentAccount.self) private var account
   @Environment(CurrentInstance.self) private var currentInstance
 
+  /// 通知数据源。
   @State private var dataSource = NotificationsListDataSource()
+  /// 视图状态（加载中、已加载、错误）。
   @State private var viewState: NotificationsListState = .loading
+  /// 当前选择的通知类型过滤器。
   @State private var selectedType: Models.Notification.NotificationType?
+  /// 通知策略（控制哪些通知被过滤）。
   @State private var policy: Models.NotificationsPolicy?
+  /// 是否显示通知策略设置页面。
   @State private var isNotificationsPolicyPresented: Bool = false
 
+  /// 锁定的通知类型（只显示特定类型）。
   let lockedType: Models.Notification.NotificationType?
+  /// 锁定的账户 ID（只显示特定账户的通知）。
   let lockedAccountId: String?
+  /// 是否为锁定类型模式。
   let isLockedType: Bool
 
+  /// 初始化方法。
+  ///
+  /// - Parameters:
+  ///   - lockedType: 可选的锁定通知类型。
+  ///   - lockedAccountId: 可选的锁定账户 ID。
   public init(
     lockedType: Models.Notification.NotificationType? = nil,
     lockedAccountId: String? = nil

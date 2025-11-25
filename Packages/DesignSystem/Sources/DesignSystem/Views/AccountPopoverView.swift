@@ -1,19 +1,59 @@
+/*
+ * AccountPopoverView.swift
+ * IceCubesApp - 账户弹出卡片视图
+ *
+ * 文件功能：
+ * 在鼠标悬停时显示账户预览卡片（类似 Twitter 的用户卡片）。
+ *
+ * 核心职责：
+ * - 显示账户头像、横幅、名称和简介
+ * - 展示关注者、关注中、帖子数量统计
+ * - 支持自动消失和悬停保持
+ * - 提供自定义对齐和布局
+ *
+ * 技术要点：
+ * - onHover 监听鼠标悬停
+ * - Task 防抖延迟显示/隐藏
+ * - @Binding 状态绑定控制显示
+ * - 自定义对齐引导线（bottomAvatar）
+ * - ViewModifier 封装弹出逻辑
+ *
+ * 使用场景：
+ * - 时间线中的账户名称悬停
+ * - 账户列表中的快速预览
+ *
+ * 依赖关系：
+ * - Env: Theme、UserPreferences
+ * - Models: Account
+ * - NukeUI: LazyImage
+ */
+
 import Env
 import Models
 import Nuke
 import NukeUI
 import SwiftUI
 
+/// 账户弹出卡片视图。
+///
+/// 显示账户的详细预览信息，包括头像、横幅、统计数据和简介。
 @MainActor
 struct AccountPopoverView: View {
+  /// 要展示的账户。
   let account: Account
-  let theme: Theme  // using `@Environment(Theme.self) will crash the SwiftUI preview
+  /// 主题设置（注意：使用 @Environment 会导致预览崩溃）。
+  let theme: Theme
+  /// 头像配置。
   private let config: AvatarView.FrameConfig = .account
 
+  /// 控制弹出窗口显示状态。
   @Binding var showPopup: Bool
+  /// 是否自动消失。
   @Binding var autoDismiss: Bool
+  /// 控制自动消失的任务。
   @Binding var toggleTask: Task<Void, Never>
 
+  /// 视图主体。
   var body: some View {
     VStack(alignment: .leading) {
       LazyImage(
@@ -96,6 +136,13 @@ struct AccountPopoverView: View {
     }
   }
 
+  /// 创建自定义信息标签（显示统计数字和标题）。
+  ///
+  /// - Parameters:
+  ///   - title: 标签标题。
+  ///   - count: 数量值。
+  ///   - needsBadge: 是否显示红点徽章。
+  /// - Returns: 信息标签视图。
   @MainActor
   private func makeCustomInfoLabel(title: LocalizedStringKey, count: Int, needsBadge: Bool = false)
     -> some View
@@ -126,6 +173,7 @@ struct AccountPopoverView: View {
     .accessibilityValue("\(count)")
   }
 
+  /// 适应性头像配置（根据主题调整圆角）。
   private var adaptiveConfig: AvatarView.FrameConfig {
     let cornerRadius: CGFloat =
       if config == .badge || theme.avatarShape == .circle {
@@ -138,6 +186,7 @@ struct AccountPopoverView: View {
   }
 }
 
+/// 底部头像对齐引导线（用于对齐统计数字和头像底部）。
 private enum BottomAvatarAlignment: AlignmentID {
   static func defaultValue(in context: ViewDimensions) -> CGFloat {
     context.height
@@ -145,19 +194,30 @@ private enum BottomAvatarAlignment: AlignmentID {
 }
 
 extension VerticalAlignment {
+  /// 自定义垂直对齐：底部头像对齐。
   static let bottomAvatar = VerticalAlignment(BottomAvatarAlignment.self)
 }
 
+/// 账户弹出卡片修饰器。
+///
+/// 为视图添加悬停显示账户卡片的功能。
 public struct AccountPopoverModifier: ViewModifier {
+  /// 全局主题。
   @Environment(Theme.self) private var theme
+  /// 用户偏好设置（控制是否启用弹出卡片）。
   @Environment(UserPreferences.self) private var userPreferences
 
+  /// 是否显示弹出窗口。
   @State private var showPopup = false
+  /// 是否自动消失。
   @State private var autoDismiss = true
+  /// 控制延迟显示/隐藏的任务。
   @State private var toggleTask: Task<Void, Never> = Task {}
 
+  /// 要展示的账户。
   let account: Account
 
+  /// 修饰器主体（应用到目标视图）。
   public func body(content: Content) -> some View {
     if !userPreferences.showAccountPopover {
       return AnyView(content)
@@ -193,12 +253,19 @@ public struct AccountPopoverModifier: ViewModifier {
         })
   }
 
+  /// 初始化方法。
+  ///
+  /// - Parameter account: 要展示的账户。
   init(_ account: Account) {
     self.account = account
   }
 }
 
 extension View {
+  /// 为视图添加账户弹出卡片功能。
+  ///
+  /// - Parameter account: 要展示的账户。
+  /// - Returns: 应用了弹出卡片修饰器的视图。
   public func accountPopover(_ account: Account) -> some View {
     modifier(AccountPopoverModifier(account))
   }

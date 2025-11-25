@@ -1,5 +1,38 @@
-import Combine
+/*
+ * AccountsListRow.swift
+ * IceCubesApp - 账户列表行视图
+ *
+ * 文件功能：
+ * 展示账户列表中的单行，包括头像、名称、关注者数和操作按钮。
+ *
+ * 核心职责：
+ * - 显示账户头像、显示名、用户名和关注者数
+ * - 展示已验证字段（绿色勾选标记）
+ * - 提供关注/屏蔽等账户操作
+ * - 支持关注请求模式（接受/拒绝按钮）
+ * - 显示账户详情上下文菜单
+ *
+ * 技术要点：
+ * - AccountsListRowViewModel 管理行状态
+ * - EmojiText 渲染自定义表情
+ * - AvatarView 展示头像
+ * - AccountDetailContextMenu 上下文菜单
+ * - FollowRequestButtons 关注请求按钮
+ *
+ * 使用场景：
+ * - 关注者/正在关注列表
+ * - 点赞/转发用户列表
+ * - 搜索结果列表
+ * - 关注请求列表
+ *
+ * 依赖关系：
+ * - DesignSystem: AvatarView、EmojiText
+ * - Env: Theme、CurrentAccount、RouterPath
+ * - Models: Account、Relationship
+ */
+
 import AppAccount
+import Combine
 import DesignSystem
 import EmojiText
 import Env
@@ -8,19 +41,33 @@ import NetworkClient
 import Observation
 import SwiftUI
 
+/// 账户列表行视图模型。
+///
+/// 管理单行的账户数据和关系状态。
 @MainActor
 @Observable public class AccountsListRowViewModel {
+  /// Mastodon 客户端。
   var client: MastodonClient?
 
+  /// 账户数据。
   var account: Account
+  /// 与当前用户的关系状态。
   var relationShip: Relationship?
 
+  /// 初始化方法。
+  ///
+  /// - Parameters:
+  ///   - account: 账户数据。
+  ///   - relationShip: 可选的关系状态。
   public init(account: Account, relationShip: Relationship? = nil) {
     self.account = account
     self.relationShip = relationShip
   }
 }
 
+/// 账户列表行视图。
+///
+/// 展示单个账户的信息和操作按钮。
 @MainActor
 public struct AccountsListRow: View {
   @Environment(Theme.self) private var theme

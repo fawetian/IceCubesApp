@@ -1,13 +1,50 @@
+/*
+ * Tabs.swift
+ * IceCubesApp - 应用标签页枚举
+ *
+ * 文件功能：
+ * 定义应用所有可用的标签页类型、图标、标题和内容视图。
+ *
+ * 核心职责：
+ * - 枚举所有标签页类型（时间线、通知、探索等）
+ * - 提供标签页的标题和图标
+ * - 创建对应标签页的内容视图
+ * - 支持 AppIntents 快捷指令
+ * - 管理标签页的可见性和位置
+ *
+ * 技术要点：
+ * - Codable 支持持久化
+ * - Hashable 用于集合操作
+ * - CaseIterable 遍历所有类型
+ * - ViewBuilder 动态视图构建
+ * - 关联值（anyTimelineFilter）
+ *
+ * 使用场景：
+ * - 主应用的 TabView
+ * - 用户自定义标签栏
+ * - 快捷指令集成
+ * - visionOS 和 iPad 多窗口
+ *
+ * 依赖关系：
+ * - Timeline: TimelineTab、TimelineFilter
+ * - Explore: ExploreTab
+ * - Account: ProfileTab、列表视图
+ * - Env: RouterPath、UserPreferences
+ */
+
 import Account
 import AppIntents
 import DesignSystem
+import Env
 import Explore
 import Foundation
 import StatusKit
 import SwiftUI
 import Timeline
-import Env
 
+/// 应用标签页枚举。
+///
+/// 定义所有可用的标签页类型和相关属性。
 @MainActor
 enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
   case timeline, notifications, mentions, explore, messages, settings, other
@@ -20,7 +57,7 @@ enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
   case lists
   case links
   case anyTimelineFilter(filter: TimelineFilter)
-  
+
   nonisolated var id: Int {
     return switch self {
     case .timeline: 0
@@ -44,9 +81,10 @@ enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
       filter.hashValue
     }
   }
-  
+
   nonisolated static var allCases: [AppTab] {
-    [.timeline,
+    [
+      .timeline,
       .notifications,
       .mentions,
       .explore,
@@ -62,9 +100,10 @@ enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
       .post,
       .followedTags,
       .lists,
-      .links]
+      .links,
+    ]
   }
-  
+
   init(with id: Int) {
     switch id {
     case 0:
@@ -121,7 +160,7 @@ enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
     pinnedFilters: Binding<[TimelineFilter]>
   ) -> some View {
     switch self {
-    case let .anyTimelineFilter(filter):
+    case .anyTimelineFilter(let filter):
       TimelineTab(timeline: .constant(filter))
     case .timeline:
       TimelineTab(canFilterTimeline: true, timeline: homeTimeline, pinedFilters: pinnedFilters)
@@ -186,7 +225,7 @@ enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
 
   var title: LocalizedStringKey {
     switch self {
-    case let .anyTimelineFilter(filter):
+    case .anyTimelineFilter(let filter):
       filter.localizedTitle()
     case .timeline:
       "tab.timeline"
@@ -227,7 +266,7 @@ enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
 
   var iconName: String {
     switch self {
-    case let .anyTimelineFilter(filter):
+    case .anyTimelineFilter(let filter):
       filter.iconName()
     case .timeline:
       "rectangle.stack"
@@ -269,16 +308,17 @@ enum AppTab: Identifiable, Hashable, CaseIterable, Codable {
 
 @MainActor
 enum SidebarSections: Int, Identifiable {
-  case timeline, activities, account, app, loggedOutTabs, iosTabs, visionOSTabs, lists, tags, localTimeline, tagGroup
-  
+  case timeline, activities, account, app, loggedOutTabs, iosTabs, visionOSTabs, lists, tags,
+    localTimeline, tagGroup
+
   nonisolated var id: Int {
     rawValue
   }
-  
+
   static var macOrIpadOSSections: [SidebarSections] {
     [.timeline, .activities, .account, .lists, .tags]
   }
-  
+
   var title: String {
     switch self {
     case .timeline:
@@ -301,7 +341,7 @@ enum SidebarSections: Int, Identifiable {
       ""
     }
   }
-  
+
   var tabs: [AppTab] {
     switch self {
     case .timeline:
@@ -321,7 +361,9 @@ enum SidebarSections: Int, Identifiable {
     case .lists:
       return CurrentAccount.shared.lists.map { .anyTimelineFilter(filter: .list(list: $0)) }
     case .tags:
-      return CurrentAccount.shared.tags.map { .anyTimelineFilter(filter: .hashtag(tag: $0.name, accountId: nil)) }
+      return CurrentAccount.shared.tags.map {
+        .anyTimelineFilter(filter: .hashtag(tag: $0.name, accountId: nil))
+      }
     case .localTimeline, .tagGroup:
       return []
     }
